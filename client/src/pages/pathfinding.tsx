@@ -327,17 +327,36 @@ export default function PathfindingPage() {
     reader.onload = (e) => {
       try {
         const importData = JSON.parse(e.target?.result as string);
+        console.log('Importing grid data:', importData);
         
         if (importData.gridData && importData.startPoint && importData.endPoint) {
+          // Clear any running visualization first
+          setIsRunning(false);
+          setIsPaused(false);
+          setStatus('ready');
+          
+          // Set the new grid data
           setGrid(importData.gridData);
           setStartPoint(importData.startPoint);
           setEndPoint(importData.endPoint);
-          resetGrid();
+          
+          // Reset stats
+          setStats(prev => ({ 
+            ...prev, 
+            nodesVisited: 0, 
+            pathLength: 0, 
+            timeTaken: 0,
+            wallCells: importData.gridData.flat().filter((cell: any) => cell.type === 'wall').length
+          }));
+          
+          console.log('Grid imported successfully');
         } else {
-          console.error('Invalid grid format');
+          console.error('Invalid grid format - missing required fields');
+          alert('Invalid grid file format. Please select a valid exported grid file.');
         }
       } catch (error) {
         console.error('Failed to import grid:', error);
+        alert('Failed to import grid. Please check the file format.');
       }
     };
     reader.readAsText(file);
