@@ -335,8 +335,21 @@ export default function PathfindingPage() {
           setIsPaused(false);
           setStatus('ready');
           
+          // Normalize the imported grid data to fix null values
+          const normalizedGrid = importData.gridData.map((row: any[]) => 
+            row.map((cell: any) => ({
+              ...cell,
+              distance: cell.distance === null ? Infinity : cell.distance,
+              fScore: cell.fScore === null ? Infinity : cell.fScore,
+              gScore: cell.gScore === null ? Infinity : cell.gScore,
+              isVisited: false,
+              isPath: false,
+              parent: null
+            }))
+          );
+          
           // Set the new grid data
-          setGrid(importData.gridData);
+          setGrid(normalizedGrid);
           setStartPoint(importData.startPoint);
           setEndPoint(importData.endPoint);
           
