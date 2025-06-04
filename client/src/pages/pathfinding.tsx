@@ -34,6 +34,7 @@ export default function PathfindingPage() {
     wallCells: 0
   });
   const [status, setStatus] = useState<'ready' | 'running' | 'paused' | 'completed'>('ready');
+  const [animationCleanup, setAnimationCleanup] = useState<(() => void) | null>(null);
 
   // Initialize grid
   const initializeGrid = useCallback(() => {
@@ -147,6 +148,7 @@ export default function PathfindingPage() {
 
     clearVisualization();
     setIsRunning(true);
+    setIsPaused(false);
     setStatus('running');
     setStats(prev => ({ ...prev, nodesVisited: 0, pathLength: 0, timeTaken: 0 }));
 
@@ -171,16 +173,26 @@ export default function PathfindingPage() {
           break;
       }
 
+      console.log('Steps generated:', steps.length);
+
       // Animate the steps
       let visitedCount = 0;
       let pathLength = 0;
+      let isAnimating = true;
 
-      for (let i = 0; i < steps.length; i++) {
-        if (!isRunning) break;
+      // Store cleanup function
+      const cleanup = () => {
+        isAnimating = false;
+      };
+      setAnimationCleanup(() => cleanup);
 
+      for (let i = 0; i < steps.length && isAnimating; i++) {
         const step = steps[i];
         
-        await new Promise(resolve => setTimeout(resolve, speed));
+        // Wait for delay
+        await new Promise(resolve => setTimeout(resolve, 101 - speed));
+        
+        if (!isAnimating) break;
 
         setGrid(prevGrid => {
           const newGrid = prevGrid.map(row => row.map(cell => ({ ...cell })));
@@ -204,18 +216,21 @@ export default function PathfindingPage() {
         }));
       }
 
-      const endTime = Date.now();
-      setStats(prev => ({
-        ...prev,
-        timeTaken: endTime - startTime
-      }));
+      if (isAnimating) {
+        const endTime = Date.now();
+        setStats(prev => ({
+          ...prev,
+          timeTaken: endTime - startTime
+        }));
+        setStatus('completed');
+      }
 
-      setStatus('completed');
     } catch (error) {
       console.error('Pathfinding error:', error);
       setStatus('ready');
     } finally {
       setIsRunning(false);
+      setAnimationCleanup(null);
     }
   };
 
@@ -231,15 +246,17 @@ export default function PathfindingPage() {
   // Clear entire grid
   const clearGrid = () => {
     setGrid(prevGrid => {
-      const newGrid = prevGrid.map(row => 
-        row.map(cell => ({
-          ...cell,
-          type: cell.type === 'start' || cell.type === 'end' ? cell.type : 'empty',
-          isVisited: false,
-          isPath: false
-        }))
+      return prevGrid.map(row => 
+        row.map(cell => {
+          const newCell: Cell = {
+            ...cell,
+            type: (cell.type === 'start' || cell.type === 'end') ? cell.type : 'empty',
+            isVisited: false,
+            isPath: false
+          };
+          return newCell;
+        })
       );
-      return newGrid;
     });
     resetGrid();
   };
