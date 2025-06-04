@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Route } from 'lucide-react';
+import { Route, Download, Upload } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import Grid from '@/components/pathfinding/Grid';
 import ControlPanel from '@/components/pathfinding/ControlPanel';
 import StatusBar from '@/components/pathfinding/StatusBar';
-import SaveLoadGrid from '@/components/pathfinding/SaveLoadGrid';
+
 import { 
   Cell, 
   Algorithm, 
@@ -14,8 +15,7 @@ import {
 } from '@/lib/pathfinding/types';
 import { PathfindingAlgorithms } from '@/lib/pathfinding/algorithms';
 import { MazeGenerator } from '@/lib/pathfinding/mazeGenerator';
-import { useMutation } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+
 
 const GRID_ROWS = 25;
 const GRID_COLS = 50;
@@ -38,19 +38,6 @@ export default function PathfindingPage() {
   });
   const [status, setStatus] = useState<'ready' | 'running' | 'paused' | 'completed'>('ready');
   const [animationCleanup, setAnimationCleanup] = useState<(() => void) | null>(null);
-
-  // Algorithm run saving mutation
-  const saveAlgorithmRunMutation = useMutation({
-    mutationFn: async (runData: any) => {
-      const response = await fetch('/api/algorithm-runs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(runData),
-      });
-      if (!response.ok) throw new Error('Failed to save algorithm run');
-      return response.json();
-    },
-  });
 
   // Initialize grid
   const initializeGrid = useCallback(() => {
@@ -241,20 +228,7 @@ export default function PathfindingPage() {
         setStats(finalStats);
         setStatus('completed');
 
-        // Save algorithm run results to database
-        const pathData = steps
-          .filter(step => step.type === 'path')
-          .map(step => step.position);
 
-        saveAlgorithmRunMutation.mutate({
-          algorithm: selectedAlgorithm,
-          nodesVisited: visitedCount,
-          pathLength: pathLength,
-          timeTaken: endTime - startTime,
-          success: pathLength > 0,
-          pathData: pathData,
-          gridId: null // Not associated with a saved grid
-        });
       }
 
     } catch (error) {
@@ -318,12 +292,58 @@ export default function PathfindingPage() {
     setStatus('paused');
   };
 
-  // Handle loading a saved grid
-  const handleLoadGrid = (loadedGrid: Cell[][], loadedStart: Position, loadedEnd: Position) => {
-    setGrid(loadedGrid);
-    setStartPoint(loadedStart);
-    setEndPoint(loadedEnd);
-    resetGrid();
+  // Export grid configuration
+  const exportGrid = () => {
+    const exportData = {
+      name: 'Pathfinding Grid',
+      gridData: grid,
+      startPoint,
+      endPoint,
+      rows: GRID_ROWS,
+      cols: GRID_COLS,
+      exportedAt: new Date().toISOString(),
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+      type: 'application/json',
+    });
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'pathfinding_grid.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Import grid configuration
+  const importGrid = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const importData = JSON.parse(e.target?.result as string);
+        
+        if (importData.gridData && importData.startPoint && importData.endPoint) {
+          setGrid(importData.gridData);
+          setStartPoint(importData.startPoint);
+          setEndPoint(importData.endPoint);
+          resetGrid();
+        } else {
+          console.error('Invalid grid format');
+        }
+      } catch (error) {
+        console.error('Failed to import grid:', error);
+      }
+    };
+    reader.readAsText(file);
+    
+    // Reset input
+    event.target.value = '';
   };
 
   return (
@@ -337,14 +357,27 @@ export default function PathfindingPage() {
             </div>
             <h1 className="text-2xl font-bold text-gray-900">Pathfinding Visualizer</h1>
           </div>
-          <div className="flex items-center space-x-4">
-            <SaveLoadGrid
-              grid={grid}
-              startPoint={startPoint}
-              endPoint={endPoint}
-              onLoadGrid={handleLoadGrid}
-            />
+          <div className="flex items-center space-x-3">
+            <Button variant="outline" size="sm" onClick={exportGrid} className="flex items-center space-x-2">
+              <Download className="w-4 h-4" />
+              <span>Export Grid</span>
+            </Button>
+            <label className="cursor-pointer">
+              <Button variant="outline" size="sm" className="flex items-center space-x-2" asChild>
+                <div>
+                  <Upload className="w-4 h-4" />
+                  <span>Import Grid</span>
+                </div>
+              </Button>
+              <input
+                type="file"
+                accept=".json"
+                onChange={importGrid}
+                className="hidden"
+              />
+            </label>
           </div>
+
           <div className="hidden md:flex items-center space-x-4 text-sm text-gray-600">
             <span className="flex items-center space-x-2">
               <div className="w-4 h-4 bg-green-500 rounded"></div>
