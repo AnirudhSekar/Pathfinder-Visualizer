@@ -3,6 +3,7 @@ import { Route } from 'lucide-react';
 import Grid from '@/components/pathfinding/Grid';
 import ControlPanel from '@/components/pathfinding/ControlPanel';
 import StatusBar from '@/components/pathfinding/StatusBar';
+import SaveLoadGrid from '@/components/pathfinding/SaveLoadGrid';
 import { 
   Cell, 
   Algorithm, 
@@ -13,6 +14,8 @@ import {
 } from '@/lib/pathfinding/types';
 import { PathfindingAlgorithms } from '@/lib/pathfinding/algorithms';
 import { MazeGenerator } from '@/lib/pathfinding/mazeGenerator';
+import { useMutation } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 
 const GRID_ROWS = 25;
 const GRID_COLS = 50;
