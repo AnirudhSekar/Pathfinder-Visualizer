@@ -1,0 +1,145 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 20 14.3% 4.1%;
+  --muted: 60 4.8% 95.9%;
+  --muted-foreground: 25 5.3% 44.7%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 20 14.3% 4.1%;
+  --card: 0 0% 100%;
+  --card-foreground: 20 14.3% 4.1%;
+  --border: 20 5.9% 90%;
+  --input: 20 5.9% 90%;
+  --primary: 207 90% 54%;
+  --primary-foreground: 211 100% 99%;
+  --secondary: 60 4.8% 95.9%;
+  --secondary-foreground: 24 9.8% 10%;
+  --accent: 60 4.8% 95.9%;
+  --accent-foreground: 24 9.8% 10%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 60 9.1% 97.8%;
+  --ring: 20 14.3% 4.1%;
+  --radius: 0.5rem;
+
+  /* Pathfinding colors */
+  --start: 122 39% 49%; /* #4CAF50 */
+  --end: 4 90% 58%; /* #F44336 */
+  --wall: 216 14% 28%; /* #37474F */
+  --visited: 210 100% 96%; /* #E3F2FD */
+  --path: 36 100% 50%; /* #FF9800 */
+  --grid-bg: 0 0% 100%; /* #FFFFFF */
+}
+
+.dark {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --primary: 207 90% 54%;
+  --primary-foreground: 211 100% 99%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 240 4.9% 83.9%;
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer components {
+  .grid-cell {
+    @apply transition-all duration-150 ease-in-out border border-gray-200 cursor-pointer;
+  }
+
+  .grid-cell:hover {
+    @apply scale-110 z-10 shadow-md;
+  }
+
+  .grid-cell.start {
+    background-color: hsl(var(--start));
+  }
+
+  .grid-cell.end {
+    background-color: hsl(var(--end));
+  }
+
+  .grid-cell.wall {
+    background-color: hsl(var(--wall));
+  }
+
+  .grid-cell.visited {
+    background-color: hsl(var(--visited));
+    animation: visitedAnimation 0.3s ease-in-out;
+  }
+
+  .grid-cell.path {
+    background-color: hsl(var(--path));
+    animation: pathAnimation 0.5s ease-in-out;
+  }
+
+  .control-button {
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  .control-button:hover {
+    @apply -translate-y-0.5 shadow-lg;
+  }
+
+  .algorithm-card {
+    @apply transition-all duration-200 ease-in-out border-2 border-transparent;
+  }
+
+  .algorithm-card:hover {
+    @apply border-blue-600 -translate-y-0.5;
+  }
+
+  .algorithm-card.selected {
+    @apply border-blue-600 bg-blue-50;
+  }
+}
+
+@keyframes visitedAnimation {
+  0% {
+    background-color: hsl(var(--grid-bg));
+    transform: scale(0.8);
+  }
+  100% {
+    background-color: hsl(var(--visited));
+    transform: scale(1);
+  }
+}
+
+@keyframes pathAnimation {
+  0% {
+    background-color: hsl(var(--visited));
+    transform: scale(0.9);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    background-color: hsl(var(--path));
+    transform: scale(1);
+  }
+}
