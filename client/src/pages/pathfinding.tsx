@@ -39,6 +39,19 @@ export default function PathfindingPage() {
   const [status, setStatus] = useState<'ready' | 'running' | 'paused' | 'completed'>('ready');
   const [animationCleanup, setAnimationCleanup] = useState<(() => void) | null>(null);
 
+  // Algorithm run saving mutation
+  const saveAlgorithmRunMutation = useMutation({
+    mutationFn: async (runData: any) => {
+      const response = await fetch('/api/algorithm-runs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(runData),
+      });
+      if (!response.ok) throw new Error('Failed to save algorithm run');
+      return response.json();
+    },
+  });
+
   // Initialize grid
   const initializeGrid = useCallback(() => {
     const newGrid: Cell[][] = [];
@@ -221,11 +234,27 @@ export default function PathfindingPage() {
 
       if (isAnimating) {
         const endTime = Date.now();
-        setStats(prev => ({
-          ...prev,
+        const finalStats = {
+          ...stats,
           timeTaken: endTime - startTime
-        }));
+        };
+        setStats(finalStats);
         setStatus('completed');
+
+        // Save algorithm run results to database
+        const pathData = steps
+          .filter(step => step.type === 'path')
+          .map(step => step.position);
+
+        saveAlgorithmRunMutation.mutate({
+          algorithm: selectedAlgorithm,
+          nodesVisited: visitedCount,
+          pathLength: pathLength,
+          timeTaken: endTime - startTime,
+          success: pathLength > 0,
+          pathData: pathData,
+          gridId: null // Not associated with a saved grid
+        });
       }
 
     } catch (error) {
@@ -289,6 +318,14 @@ export default function PathfindingPage() {
     setStatus('paused');
   };
 
+  // Handle loading a saved grid
+  const handleLoadGrid = (loadedGrid: Cell[][], loadedStart: Position, loadedEnd: Position) => {
+    setGrid(loadedGrid);
+    setStartPoint(loadedStart);
+    setEndPoint(loadedEnd);
+    resetGrid();
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Header */}
@@ -299,6 +336,14 @@ export default function PathfindingPage() {
               <Route className="text-white w-5 h-5" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900">Pathfinding Visualizer</h1>
+          </div>
+          <div className="flex items-center space-x-4">
+            <SaveLoadGrid
+              grid={grid}
+              startPoint={startPoint}
+              endPoint={endPoint}
+              onLoadGrid={handleLoadGrid}
+            />
           </div>
           <div className="hidden md:flex items-center space-x-4 text-sm text-gray-600">
             <span className="flex items-center space-x-2">
